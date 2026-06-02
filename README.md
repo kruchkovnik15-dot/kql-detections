@@ -18,13 +18,11 @@ The goal is to provide high-fidelity analytics suitable for Microsoft Sentinel e
 
 ## Detection Coverage
 
-| Detection                  | ATT&CK Technique |
-| -------------------------- | ---------------- |
-| LSASS Memory Access        | T1003.001        |
-| Defender Tampering         | T1562.001        |
-| Office Spawn PowerShell    | T1204            |
-| Certutil Payload Retrieval | T1105            |
-| Regsvr32 Squiblydoo        | T1218.010        |
+| Detection | File | ATT&CK Technique | Tactic |
+|------------|------|------------------|--------|
+| LSASS Memory Access | detections/lsass_memory_access.kql | T1003.001 | Credential Access |
+| Defender Tampering | detections/defender_tampering.kql | T1562.001 | Defense Evasion |
+| Shadow Copy Deletion | detections/shadow_copy_deletion.kql | T1490 | Impact |
 
 ---
 

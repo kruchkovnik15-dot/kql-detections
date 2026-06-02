@@ -1,0 +1,66 @@
+// Microsoft Defender Tampering Detection
+// ATT&CK: T1562.001 - Impair Defenses: Disable or Modify Tools
+// Data sources: DeviceProcessEvents, DeviceRegistryEvents
+
+let DefenderTamperingProcesses =
+DeviceProcessEvents
+| where FileName in~ ("powershell.exe", "pwsh.exe", "cmd.exe", "reg.exe")
+| where ProcessCommandLine has_any (
+    "Set-MpPreference",
+    "Add-MpPreference",
+    "Remove-MpPreference",
+    "DisableRealtimeMonitoring",
+    "DisableBehaviorMonitoring",
+    "DisableScriptScanning",
+    "DisableIOAVProtection",
+    "DisableArchiveScanning",
+    "ExclusionPath",
+    "ExclusionProcess",
+    "ExclusionExtension",
+    "Windows Defender",
+    "Microsoft Defender"
+)
+| project
+    Timestamp,
+    DeviceName,
+    DetectionSource = "ProcessCommandLine",
+    Account = InitiatingProcessAccountName,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    ReportId;
+
+let DefenderTamperingRegistry =
+DeviceRegistryEvents
+| where RegistryKey has_any (
+    @"\Microsoft\Windows Defender\",
+    @"\Policies\Microsoft\Windows Defender\"
+)
+| where RegistryValueName has_any (
+    "DisableAntiSpyware",
+    "DisableAntiVirus",
+    "DisableRealtimeMonitoring",
+    "DisableBehaviorMonitoring",
+    "DisableScriptScanning",
+    "DisableIOAVProtection",
+    "DisableArchiveScanning"
+)
+or RegistryKey has_any (
+    @"\Windows Defender\Exclusions\Paths",
+    @"\Windows Defender\Exclusions\Processes",
+    @"\Windows Defender\Exclusions\Extensions"
+)
+| project
+    Timestamp,
+    DeviceName,
+    DetectionSource = "RegistryModification",
+    Account = InitiatingProcessAccountName,
+    FileName = InitiatingProcessFileName,
+    ProcessCommandLine = InitiatingProcessCommandLine,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    ReportId;
+
+union DefenderTamperingProcesses, DefenderTamperingRegistry
+| order by Timestamp desc

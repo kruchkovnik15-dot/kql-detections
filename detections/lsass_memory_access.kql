@@ -1,0 +1,43 @@
+// Suspicious LSASS Memory Access
+// ATT&CK: T1003.001 - OS Credential Dumping: LSASS Memory
+// Data source: Microsoft Defender for Endpoint Advanced Hunting / Microsoft Sentinel
+
+DeviceEvents
+| where ActionType == "OpenProcessApiCall"
+| extend Additional = parse_json(AdditionalFields)
+| extend
+    TargetProcess = tostring(Additional.TargetProcessName),
+    TargetProcessId = tostring(Additional.TargetProcessId),
+    GrantedAccess = tostring(Additional.GrantedAccess)
+| where TargetProcess endswith "lsass.exe"
+| where GrantedAccess in~ ("0x1010", "0x1410", "0x143a", "0x1fffff", "0x1f0fff")
+| where InitiatingProcessFileName in~ (
+    "procdump.exe",
+    "rundll32.exe",
+    "powershell.exe",
+    "pwsh.exe",
+    "cmd.exe",
+    "wmic.exe",
+    "taskmgr.exe"
+)
+| where InitiatingProcessFolderPath !has_any (
+    @"\Microsoft Defender\",
+    @"\Windows Defender\",
+    @"\CrowdStrike\",
+    @"\SentinelOne\",
+    @"\CarbonBlack\",
+    @"\Elastic\",
+    @"\Wazuh\"
+)
+| project
+    Timestamp,
+    DeviceName,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    InitiatingProcessFolderPath,
+    InitiatingProcessAccountName,
+    TargetProcess,
+    TargetProcessId,
+    GrantedAccess,
+    ActionType,
+    ReportId

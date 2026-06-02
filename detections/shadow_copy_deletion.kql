@@ -1,0 +1,38 @@
+// Shadow Copy And Recovery Artifact Deletion Detection
+// ATT&CK: T1490 - Inhibit System Recovery
+// Data source: DeviceProcessEvents
+
+DeviceProcessEvents
+| where FileName in~ (
+    "vssadmin.exe",
+    "wmic.exe",
+    "powershell.exe",
+    "pwsh.exe",
+    "wbadmin.exe",
+    "bcdedit.exe",
+    "diskshadow.exe"
+)
+| where ProcessCommandLine has_any (
+    "delete shadows",
+    "shadowcopy delete",
+    "Win32_ShadowCopy",
+    "Delete()",
+    "Resize ShadowStorage",
+    "vssadmin delete",
+    "wmic shadowcopy",
+    "wbadmin delete",
+    "delete catalog",
+    "recoveryenabled no",
+    "bootstatuspolicy ignoreallfailures",
+    "diskshadow"
+)
+| project
+    Timestamp,
+    DeviceName,
+    Account = InitiatingProcessAccountName,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    ReportId
+| order by Timestamp desc
